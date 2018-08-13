@@ -1,28 +1,31 @@
 # First we'll import the os module
 import os
 import csv
-#import time
-from datetime import date
-from datetime import time
+import calendar
+import locale 
+import sys
 from datetime import datetime
 
-csvpath = os.path.join('..', 'Resources', 'budget_data.csv')
+csvpath = os.path.join('..', 'Resources', 'budget_data_test.csv')
 
-Total = 0.00
+filename  = open("outputfile.txt",'w')
+sys.stdout = filename
+Total    = 0.00
+counter  = 0
+monthly_revenue  =  0.00
+average_change   =  0.00
+
 monthList = []
-lrev_amt  = -9999.99
-hrev_amt  =  0.00
-lrev_day  = '01/01/1900'
-hrev_day  = '01/01/1900'
+prev_record    = {"month": "01-1900","rev_amt": 0.00} 
+oldest_rec     = {"month": "01-1900","rev_amt": 0.00 }
+latest_rec     = {"month": "01-1900","rev_amt": 0.00 }
+highest_profit = {"month": "01-1900","rev_amt": 0.00 }
+lowest_profit  = {"month": "01-1900","rev_amt": 0.00 }
 
-month_detail = {
-                      "name": "01-JAN",
-                      "least_rev": 0.00,
-                      "lrev_day": "01/01/2000",
-                      "high_rev": 0.00,
-                      "hrev_day": "01/01/2000",
-                      "diff": 0.00 ,
-                      "diff_percent":0.00 }
+#print(locale.getlocale())
+locale.setlocale(locale.LC_ALL, '')
+#print(locale.nl_langinfo(locale.D_FMT))
+
 
 
 
@@ -30,48 +33,58 @@ with open(csvpath, newline='') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=',')
     # Read the header row first (skip this step if there is no header)
     csv_header = next(csvreader)
-    #print("CSV Header: ", csv_header)
 
-    #print(csvreader) 
     # Read each row of data after the header
     for row in csvreader:
-        Total  = Total+ int(row[1])
+        #print(row[0]+ ":" +row[1])
+        date1 = datetime.strptime (row[0],"%m/%d/%y")
+        month = str(date1.month)+"-"+ str(date1.year)
+        #print(prev_record["month"]+" : "+month)
+        if highest_profit["rev_amt"] < float(row[1]):
+            highest_profit = {"month": month,"rev_amt": float(row[1])}
+        if lowest_profit["rev_amt"] > float(row[1]):
+            lowest_profit = {"month": month,"rev_amt": float(row[1])}
 
-        date1 = datetime.strptime (row[0],"%m/%d/%y") 
-        date2= str(date1.month)+"-"+ str(date1.year)
+        if prev_record["month"]!= month:
+                if counter >0:
+                   Total  = Total + prev_record["rev_amt"] 
+                   monthly_revenue =  monthly_revenue + prev_record["rev_amt"] 
+                   average_change  =  latest_rec["rev_amt"]-oldest_rec["rev_amt"]
+                   #print(prev_record["month"]+" : "+month+" : "+ str(monthly_revenue) +" : "+ str(average_change))
+                   monthList.append({"month":prev_record["month"],"rev_amt":monthly_revenue,"diff":average_change})
+                average_change   = 0.00
+                monthly_revenue  = 0.00
+                oldest_rec = {"month": month,"rev_amt":float(row[1])}
+                latest_rec = {"month": month,"rev_amt":float(row[1])}
+        else:
+                Total  = Total + prev_record["rev_amt"]
+                monthly_revenue =  monthly_revenue + prev_record["rev_amt"] 
+                latest_rec = {"month": month,"rev_amt":float(row[1])}
+                #print(prev_record["month"]+" : "+month+" : "+ str(monthly_revenue) +" : "+ str(average_change))
+                
 
-        if str(date2) not in monthList:
-           monthList.append(str(date2))
+        prev_record =    {"month": month,"rev_amt":float(row[1])}
+        counter = counter +1 
+   
+    Total  = Total + prev_record["rev_amt"]    
+    monthly_revenue =  monthly_revenue + prev_record["rev_amt"] 
+    average_change  =  latest_rec["rev_amt"]-oldest_rec["rev_amt"]
+    monthList.append({"month":month,"rev_amt":monthly_revenue,"diff":average_change})
 
-        for month in monthList:
-            if date2 ==month:
-                #print(month)  
-                if float(row[1]) < float(lrev_amt):
-                    lrev_amt = row[1]
-                    lrev_day = row[0]
-                   
-                if float(row[1]) > float(hrev_amt):
-                    hrev_amt = row[1]
-                    hrev_day = row[0]
+    average_change = 0.00  
+    for row in monthList:
+        #print(row["month"]+" : "+str(row["rev_amt"])+" : "+str(row["diff"]))
+        average_change = average_change + float(row["diff"])
 
-                month_detail = {
-                      "name": month,
-                      "lrev_amt": lrev_amt,
-                      "lrev_day": lrev_day,
-                      "hrev_amt": hrev_amt,
-                      "hrev_day": hrev_day,
-                      "diff":  float(hrev_amt)-float(lrev_amt) ,
-                      "diff_percent": ((float(hrev_amt)-float(lrev_amt))/Total) }
-            #print(month_detail["name"] +  ":" + month_detail["lrev_amt"][0])  
-
-    print("-------------------------------------------------------------------")
-    for key, value in month_detail.items():
-            #print(f"This is a key (again): {key}")
-            #print(f"This is a Value (again): {value}")  
-            print(f"Greatest increase in profits:  {month} ({hrev_amt})")
-            print(f"Greatest increase in profits:  {month} ({lrev_amt})")      
+   
+    print("Financial Analysis")
+    print("-------------------------------------------------------------------")     
 
     print("Total Months: "+ str(len(monthList)))
     print("Total: "+str(Total))
+    print("Average Change : "+ str(average_change/(len(monthList)-1)))
+    print("Greatest Increase in Profits: "+"  "+highest_profit["month"]+" ($"+ str(highest_profit["rev_amt"])+")")
+    print("Greatest Decrease in Profits: "+"  "+lowest_profit["month"] +" ($"+ str(lowest_profit["rev_amt"])+")")
 
     print("-------------------------------------------------------------------")
+
