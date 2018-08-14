@@ -22,9 +22,6 @@ latest_rec     = {"month": "01-1900","rev_amt": 0.00 }
 highest_profit = {"month": "01-1900","rev_amt": 0.00 }
 lowest_profit  = {"month": "01-1900","rev_amt": 0.00 }
 
-#print(locale.getlocale())
-locale.setlocale(locale.LC_ALL, '')
-#print(locale.nl_langinfo(locale.D_FMT))
 
 
 
@@ -39,6 +36,7 @@ with open(csvpath, newline='') as csvfile:
         #print(row[0]+ ":" +row[1])
         date1 = datetime.strptime (row[0],"%m/%d/%y")
         month = str(date1.month)+"-"+ str(date1.year)
+        #month=date(row[0]).strftime("%b-%Y")
         #print(prev_record["month"]+" : "+month)
         if highest_profit["rev_amt"] < float(row[1]):
             highest_profit = {"month": month,"rev_amt": float(row[1])}
